@@ -1,0 +1,33 @@
+# Dependências
+**/node_modules/
+
+# Build
+**/dist/
+
+# Ambiente e credenciais
+**/.env
+**/.env.local
+**/certificados/*.pem
+**/certificados/*.p12
+**/tokens/
+hotspot-credenciais.txt
+
+# Dados locais
+mysql-data/
+
+# Arquivos grandes / instaladores
+*.zip
+
+# WireGuard
+hotspot/infra/wireguard/.wg-easy/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Cursor / agent tooling local
+.cursor/
+hotspot/.agent/

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" fill="none" role="img" aria-label="CenterSpot">
+  <defs>
+    <linearGradient id="cs-g" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2e5248"/>
+      <stop offset="1" stop-color="#1a2e28"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="6" width="44" height="44" rx="12" fill="url(#cs-g)"/>
+  <path d="M28 18c-6 0-11 4.2-11 10.5 0 5.2 4 9.2 9 10.2v4.3h4v-4.3c5-.9 9-5 9-10.2C39 22.2 34 18 28 18z" fill="#8dd55a" opacity=".95"/>
+  <circle cx="28" cy="28.5" r="3.2" fill="#f8fcfa"/>
+  <path d="M22 34.5h12" stroke="#8dd55a" stroke-width="2" stroke-linecap="round"/>
+  <text x="58" y="26" font-family="Inter,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1a2e28">Center</text>
+  <text x="58" y="44" font-family="Inter,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#2e5248">Spot</text>
+  <text x="58" y="52" font-family="Inter,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#5a6b65" letter-spacing=".08em">HOTSPOT · RADIUS · WIFI</text>
+</svg>

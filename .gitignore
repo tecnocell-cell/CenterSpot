@@ -1,33 +1,48 @@
-# Dependências
-**/node_modules/
-
-# Build
-**/dist/
-
-# Ambiente e credenciais
-**/.env
-**/.env.local
-**/certificados/*.pem
-**/certificados/*.p12
+# ── Ambiente e segredos (NUNCA commitar) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+**/certificados/
 **/tokens/
-hotspot-credenciais.txt
+*credenciais*
+cookies.txt
+**/cookies.txt
 
-# Dados locais
+# ── Dados locais / runtime ──
 mysql-data/
+**/uploads/**
+!**/uploads/**/.gitkeep
 
-# Arquivos grandes / instaladores
-*.zip
-
-# WireGuard
-hotspot/infra/wireguard/.wg-easy/
-
-# OS / IDE
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
+# ── Dependências e build ──
+**/node_modules/
+**/dist/
+build_log.txt
 *.log
 
-# Cursor / agent tooling local
+# ── Backups, temporários e lixo de editor ──
+*.bak
+*.swp
+*~
+*.master_bak
+.DS_Store
+Thumbs.db
+
+# ── Arquivos grandes ──
+*.zip
+
+# ── Infra sensível ──
+hotspot/infra/wireguard/.wg-easy/
+
+# ── IDE, Cursor e ferramentas de IA (local) ──
 .cursor/
+.idea/
+.vscode/
 hotspot/.agent/
+hotspot/.claude/
+
+# ── Testes / sessões locais ──
+**/coverage/
+.nyc_output/

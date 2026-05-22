@@ -1,19 +1,39 @@
-# Ambiente
+# Ambiente e credenciais
 backend/.env
-backend/certificados/*.pem
-backend/certificados/*.p12
+backend/.env.local
+backend/.env.production
+backend/certificados/
 backend/tokens/
+hotspot-credenciais.txt
+cookies.txt
 
 # Node
 node_modules/
 frontend/dist/
 
-# WireGuard keys
+# Uploads gerados em produção/dev
+backend/uploads/*
+!backend/uploads/campanhas/
+backend/uploads/campanhas/*
+!backend/uploads/campanhas/.gitkeep
+frontend/public/uploads/
+
+# WireGuard
 infra/wireguard/.wg-easy/
 
-# Credenciais
-hotspot-credenciais.txt
+# Backups e temporários
+*.bak
+*.swp
+*~
+*.master_bak
+
+# Ferramentas locais
+.agent/
+.claude/
+.cursor/
 
 # OS
 .DS_Store
 Thumbs.db
+*.log
+build_log.txt

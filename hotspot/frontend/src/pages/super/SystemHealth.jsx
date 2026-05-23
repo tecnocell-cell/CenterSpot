@@ -14,25 +14,64 @@ const STATE_CLASS = {
   offline: 'rn-pill--danger',
 };
 
+const CARD_ACCENT = {
+  online: 'rn-kpi--info',
+  warning: 'rn-kpi--warning',
+  offline: 'rn-kpi--highlight',
+};
+
+function parseApiError(res, body) {
+  const msg =
+    body?.error ||
+    body?.message ||
+    (typeof body === 'string' ? body : null);
+  if (msg) return `${res.status}: ${msg}`;
+  return `HTTP ${res.status}: Falha ao carregar diagnóstico`;
+}
+
 export default function SystemHealth() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchHealth = useCallback(async () => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      setError('401: Token não encontrado. Faça login novamente como super admin.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('admin_token');
       const res = await fetch('/api/system/health', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Falha ao carregar diagnóstico');
+
+      let body = {};
+      const text = await res.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = { message: text.slice(0, 200) };
+        }
       }
-      setData(await res.json());
+
+      if (!res.ok) {
+        throw new Error(parseApiError(res, body));
+      }
+
+      if (!Array.isArray(body.checks)) {
+        throw new Error('Resposta inválida: campo checks ausente');
+      }
+
+      setData(body);
       setError(null);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || 'Falha ao carregar diagnóstico');
     } finally {
       setLoading(false);
     }
@@ -45,11 +84,12 @@ export default function SystemHealth() {
   }, [fetchHealth]);
 
   const overallClass = data?.status ? STATE_CLASS[data.status] || '' : '';
+  const checks = data?.checks ?? [];
 
   return (
     <SuperAdminLayout
       title="Diagnóstico do sistema"
-      subtitle="Healthcheck de serviços, recursos e integrações."
+      subtitle="Healthcheck de serviços, recursos e integrações (GET /api/system/health)."
       maxWidth="56rem"
       actions={
         <button
@@ -66,7 +106,11 @@ export default function SystemHealth() {
         </button>
       }
     >
-      {error && <div className="rn-alert rn-alert--danger">{error}</div>}
+      {error && (
+        <div className="rn-alert rn-alert--danger" role="alert">
+          {error}
+        </div>
+      )}
 
       {loading && !data ? (
         <div className="rn-card" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -75,16 +119,51 @@ export default function SystemHealth() {
             Coletando status…
           </p>
         </div>
-      ) : data ? (
+      ) : null}
+
+      {data && (
         <>
-          <div className={`rn-kpi rn-kpi--${data.status === 'online' ? 'info' : data.status === 'warning' ? 'warning' : 'highlight'}`}>
+          <div
+            className={`rn-kpi ${
+              data.status === 'online'
+                ? 'rn-kpi--info'
+                : data.status === 'warning'
+                  ? 'rn-kpi--warning'
+                  : 'rn-kpi--highlight'
+            }`}
+          >
             <span className="rn-kpi__label">Status geral</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <span className={`rn-pill ${overallClass}`}>{STATE_LABELS[data.status] || data.status}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+              <span className={`rn-pill ${overallClass}`}>
+                {STATE_LABELS[data.status] || data.status}
+              </span>
               <span className="rn-muted" style={{ fontSize: 12 }}>
                 {data.hostname} · {new Date(data.timestamp).toLocaleString('pt-BR')}
               </span>
             </div>
+          </div>
+
+          <div className="rn-kpi-grid">
+            {checks.map((check) => (
+              <div
+                key={check.name}
+                className={`rn-kpi ${CARD_ACCENT[check.state] || 'rn-kpi--info'}`}
+              >
+                <span className="rn-kpi__label" style={{ textTransform: 'capitalize' }}>
+                  {check.name.replace(/_/g, ' ')}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                  <span className={`rn-pill ${STATE_CLASS[check.state] || ''}`}>
+                    {STATE_LABELS[check.state] || check.state}
+                  </span>
+                </div>
+                {check.detail && (
+                  <p className="rn-muted" style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4 }}>
+                    {check.detail}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="rn-card rn-table-wrap">
@@ -97,8 +176,8 @@ export default function SystemHealth() {
                 </tr>
               </thead>
               <tbody>
-                {data.checks.map((check) => (
-                  <tr key={check.name}>
+                {checks.map((check) => (
+                  <tr key={`row-${check.name}`}>
                     <td style={{ fontWeight: 500, textTransform: 'capitalize' }}>
                       {check.name.replace(/_/g, ' ')}
                     </td>
@@ -116,7 +195,7 @@ export default function SystemHealth() {
             </table>
           </div>
         </>
-      ) : null}
+      )}
     </SuperAdminLayout>
   );
 }

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const appConfig = require('../config/app')
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization
@@ -10,7 +11,7 @@ module.exports = (req, res, next) => {
   if (!token) return res.status(401).json({ error: 'Token não fornecido' })
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, appConfig.jwt.secret)
     req.user = decoded
     next()
   } catch (err) {

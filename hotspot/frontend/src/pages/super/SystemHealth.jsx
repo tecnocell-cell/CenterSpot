@@ -165,35 +165,6 @@ export default function SystemHealth() {
               </div>
             ))}
           </div>
-
-          <div className="rn-card rn-table-wrap">
-            <table className="rn-table">
-              <thead>
-                <tr>
-                  <th>Serviço</th>
-                  <th>Status</th>
-                  <th>Detalhe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {checks.map((check) => (
-                  <tr key={`row-${check.name}`}>
-                    <td style={{ fontWeight: 500, textTransform: 'capitalize' }}>
-                      {check.name.replace(/_/g, ' ')}
-                    </td>
-                    <td>
-                      <span className={`rn-pill ${STATE_CLASS[check.state] || ''}`}>
-                        {STATE_LABELS[check.state] || check.state}
-                      </span>
-                    </td>
-                    <td className="rn-muted" style={{ fontSize: 13 }}>
-                      {check.detail || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </>
       )}
     </SuperAdminLayout>

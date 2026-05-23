@@ -1,4 +1,4 @@
-/* SpotControl — CenterOS / RuralNext tokens (Tailwind 3 compat) */
+/* CenterSpot — tokens de marca (azul institucional) */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -9,38 +9,38 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --background: oklch(0.99 0.002 145);
-  --foreground: oklch(0.24 0.018 160);
-  --surface: oklch(0.985 0.002 145);
-  --surface-2: oklch(0.972 0.003 150);
+  --background: oklch(0.99 0.005 250);
+  --foreground: oklch(0.24 0.02 250);
+  --surface: oklch(0.985 0.004 250);
+  --surface-2: oklch(0.972 0.006 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 160);
+  --card-foreground: oklch(0.22 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 160);
+  --popover-foreground: oklch(0.22 0.02 250);
 
-  --primary: oklch(0.34 0.07 155);
-  --primary-foreground: oklch(0.985 0.003 145);
-  --secondary: oklch(0.96 0.008 150);
-  --secondary-foreground: oklch(0.24 0.05 155);
-  --muted: oklch(0.965 0.006 150);
-  --muted-foreground: oklch(0.5 0.015 155);
-  --accent: oklch(0.93 0.03 150);
-  --accent-foreground: oklch(0.24 0.05 155);
+  --primary: oklch(0.45 0.14 250);
+  --primary-foreground: oklch(0.985 0.003 250);
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.28 0.08 250);
+  --muted: oklch(0.965 0.008 250);
+  --muted-foreground: oklch(0.5 0.02 250);
+  --accent: oklch(0.93 0.04 250);
+  --accent-foreground: oklch(0.28 0.08 250);
   --destructive: oklch(0.577 0.225 27.325);
   --destructive-foreground: oklch(0.985 0.003 145);
   --border: oklch(0.925 0.004 150);
   --input: oklch(0.91 0.005 150);
-  --ring: oklch(0.42 0.08 155);
+  --ring: oklch(0.52 0.12 250);
 
-  --forest-900: oklch(0.24 0.05 155);
-  --forest-800: oklch(0.29 0.05 155);
-  --forest-700: oklch(0.34 0.07 155);
-  --forest-600: oklch(0.42 0.08 155);
-  --forest-500: oklch(0.52 0.11 150);
-  --forest-100: oklch(0.94 0.04 150);
-  --forest-50: oklch(0.97 0.02 150);
-  --indicator: oklch(0.72 0.16 145);
-  --gold: oklch(0.72 0.12 80);
+  --forest-900: oklch(0.22 0.06 250);
+  --forest-800: oklch(0.28 0.08 250);
+  --forest-700: oklch(0.45 0.14 250);
+  --forest-600: oklch(0.52 0.12 250);
+  --forest-500: oklch(0.58 0.11 250);
+  --forest-100: oklch(0.94 0.03 250);
+  --forest-50: oklch(0.97 0.015 250);
+  --indicator: oklch(0.72 0.12 250);
+  --gold: oklch(0.72 0.12 250);
 
   --success: oklch(0.55 0.14 150);
   --success-fg: oklch(0.32 0.1 150);
@@ -62,11 +62,11 @@
     0 2px 6px color-mix(in oklab, var(--forest-900) 8%, transparent);
 
   --sidebar: var(--forest-900);
-  --sidebar-foreground: oklch(0.985 0.003 145);
+  --sidebar-foreground: oklch(0.985 0.003 250);
   --sidebar-primary: var(--indicator);
   --sidebar-primary-foreground: var(--forest-900);
   --sidebar-accent: color-mix(in oklab, white 6%, var(--forest-900));
-  --sidebar-accent-foreground: oklch(0.985 0.003 145);
+  --sidebar-accent-foreground: oklch(0.985 0.003 250);
   --sidebar-border: color-mix(in oklab, black 30%, transparent);
   --sidebar-ring: var(--indicator);
   --theme-menu-active: var(--sidebar-primary);
@@ -143,21 +143,44 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-.rn-admin-sidebar__head {
+.rn-admin-sidebar__brand-block {
   flex-shrink: 0;
-  padding: 0.875rem 0.875rem 0.75rem;
+  padding: 1rem 0.875rem 0.75rem;
   border-bottom: 1px solid var(--sidebar-border);
+}
+
+.rn-sidebar-logo-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-start;
+  text-decoration: none;
+  margin-bottom: 0.65rem;
+}
+
+.rn-sidebar-logo {
+  display: block;
+  max-height: 56px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  /* Logo colorida → monocromática branca no fundo escuro da sidebar */
+  filter: brightness(0) invert(1);
+}
+
+.rn-admin-sidebar__head {
+  flex-shrink: 0;
+  padding: 0 0.875rem 0.75rem;
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .rn-admin-sidebar__head .rn-super-link {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   margin: 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .rn-admin-sidebar__close {
@@ -1207,26 +1230,37 @@ body {
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-pop);
-  padding: 2rem;
+  padding: 0 2rem 2rem;
 }
 
-.rn-login-brand {
+.rn-login-card__brand {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin: 0 -2rem 1.5rem;
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: var(--card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
-.rn-login-brand h1 {
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--foreground);
-  margin: 0;
+.rn-login-logo {
+  display: block;
+  max-height: 88px;
+  max-width: min(100%, 280px);
+  width: auto;
+  height: auto;
+  margin: 0 auto 12px;
+  object-fit: contain;
 }
 
-.rn-login-brand p {
+.rn-login-logo--color {
+  filter: none;
+}
+
+.rn-login-tagline {
   font-size: 12px;
   color: var(--muted-foreground);
-  margin: 0.35rem 0 0;
+  margin: 0;
+  line-height: 1.45;
 }
 
 .rn-login-badge {
@@ -1240,9 +1274,68 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: var(--success-soft);
-  color: var(--success-fg);
-  border: 1px solid color-mix(in oklab, var(--success) 30%, transparent);
+  background: color-mix(in oklab, var(--indicator) 12%, var(--card));
+  color: var(--forest-700);
+  border: 1px solid color-mix(in oklab, var(--indicator) 24%, transparent);
+}
+
+.rn-login-captcha {
+  margin-bottom: 1.25rem;
+}
+
+.rn-login-captcha__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.rn-login-captcha__expr {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--forest-700);
+  background: color-mix(in oklab, var(--indicator) 16%, var(--card));
+  border: 1px solid color-mix(in oklab, var(--indicator) 30%, transparent);
+  white-space: nowrap;
+}
+
+.rn-login-captcha__input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.rn-login-captcha__help {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.rn-login-captcha__help:hover {
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+.rn-login-captcha__hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
 }
 
 .rn-alert {
@@ -1268,6 +1361,16 @@ body {
   background: var(--success-soft);
   color: var(--success-fg);
   border: 1px solid color-mix(in oklab, var(--success) 25%, transparent);
+}
+
+.rn-alert--info {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
+}
+
+.rn-super-tabs {
+  margin-bottom: 0.25rem;
 }
 
 .rn-page-header {
@@ -1333,12 +1436,14 @@ body {
 }
 
 .rn-super-link {
-  color: var(--gold) !important;
-  border-color: color-mix(in oklab, var(--gold) 40%, transparent) !important;
+  color: var(--indicator) !important;
+  border-color: color-mix(in oklab, var(--indicator) 35%, transparent) !important;
+  background: color-mix(in oklab, var(--indicator) 8%, transparent) !important;
 }
 
 .rn-super-link:hover {
-  background: color-mix(in oklab, var(--gold) 14%, transparent) !important;
+  background: color-mix(in oklab, var(--indicator) 16%, transparent) !important;
+  color: #fff !important;
 }
 
 .rn-muted {

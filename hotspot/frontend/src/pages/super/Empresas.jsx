@@ -1,30 +1,27 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import SuperAdminLayout from '../../components/admin/SuperAdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
 
 export default function Empresas() {
-  const { isSuperAdmin } = useAuth();
-  const navigate = useNavigate();
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ nome: "", cnpj: "", email: "", telefone: "" });
+  const [form, setForm] = useState({ nome: '', cnpj: '', email: '', telefone: '' });
+  const [erro, setErro] = useState(null);
 
-  const token = localStorage.getItem("admin_token");
-  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const token = localStorage.getItem('admin_token');
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   useEffect(() => {
-    if (!isSuperAdmin) {
-      navigate("/admin");
-      return;
-    }
     fetchEmpresas();
   }, []);
 
   const fetchEmpresas = async () => {
     try {
-      const res = await fetch("/api/empresas", { headers });
+      const res = await fetch('/api/empresas', { headers });
       if (res.ok) setEmpresas(await res.json());
     } catch (err) {
       console.error(err);
@@ -35,154 +32,195 @@ export default function Empresas() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErro(null);
     try {
-      const url = editId ? `/api/empresas/${editId}` : "/api/empresas";
-      const method = editId ? "PUT" : "POST";
+      const url = editId ? `/api/empresas/${editId}` : '/api/empresas';
+      const method = editId ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers, body: JSON.stringify(form) });
-      if (res.ok) {
-        setShowModal(false);
-        setEditId(null);
-        setForm({ nome: "", cnpj: "", email: "", telefone: "" });
-        fetchEmpresas();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErro(data.message || 'Erro ao salvar empresa');
+        return;
       }
-    } catch (err) {
-      console.error(err);
+      setShowModal(false);
+      setEditId(null);
+      setForm({ nome: '', cnpj: '', email: '', telefone: '' });
+      fetchEmpresas();
+    } catch {
+      setErro('Erro de conexão');
     }
   };
 
-  const handleEdit = (empresa) => {
-    setEditId(empresa.id);
-    setForm({ nome: empresa.nome, cnpj: empresa.cnpj || "", email: empresa.email, telefone: empresa.telefone || "" });
+  const handleDelete = async (id, slug) => {
+    if (slug === 'default') {
+      alert('Não é possível deletar a empresa padrão');
+      return;
+    }
+    if (!confirm('Deseja realmente deletar esta empresa?')) return;
+    const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE', headers });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.message || 'Erro ao deletar');
+      return;
+    }
+    fetchEmpresas();
+  };
+
+  const openNova = () => {
+    setEditId(null);
+    setForm({ nome: '', cnpj: '', email: '', telefone: '' });
+    setErro(null);
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Deseja realmente deletar esta empresa?")) return;
-    try {
-      await fetch(`/api/empresas/${id}`, { method: "DELETE", headers });
-      fetchEmpresas();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#0f111a] text-gray-300 p-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <Link to="/super" className="text-gray-500 hover:text-gray-300 text-sm mb-2 inline-block">
-              &larr; Voltar ao Super Admin
-            </Link>
-            <h1 className="text-2xl font-bold text-white">Gerenciar Empresas</h1>
-          </div>
-          <button
-            onClick={() => { setEditId(null); setForm({ nome: "", cnpj: "", email: "", telefone: "" }); setShowModal(true); }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 text-sm"
-          >
-            Nova Empresa
-          </button>
+    <SuperAdminLayout
+      title="Gerenciar empresas"
+      subtitle="Cadastro e manutenção de tenants da plataforma."
+      actions={
+        <button type="button" className="rn-btn rn-btn--primary rn-btn--sm" onClick={openNova}>
+          <Plus size={14} />
+          Nova empresa
+        </button>
+      }
+    >
+      {loading ? (
+        <div className="rn-card" style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+          Carregando…
         </div>
+      ) : (
+        <div className="rn-card rn-table-wrap">
+          <table className="rn-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Contato</th>
+                <th style={{ textAlign: 'center' }}>Stats</th>
+                <th style={{ textAlign: 'right' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {empresas.map((e) => (
+                <tr key={e.id}>
+                  <td>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{e.nome}</p>
+                    <p className="rn-muted" style={{ fontSize: 11, margin: '2px 0 0' }}>
+                      /{e.slug}
+                      {e.cnpj ? ` · ${e.cnpj}` : ''}
+                    </p>
+                  </td>
+                  <td>
+                    <p style={{ fontSize: 12, margin: 0 }}>{e.email}</p>
+                    {e.telefone && (
+                      <p className="rn-muted" style={{ fontSize: 11, margin: '2px 0 0' }}>
+                        {e.telefone}
+                      </p>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <span className="rn-pill rn-pill--info">{e.total_mikrotiks || 0} MKT</span>
+                      <span className="rn-pill rn-pill--success">{e.total_planos || 0} planos</span>
+                      <span className="rn-pill rn-pill--warning">{e.total_admins || 0} admins</span>
+                    </div>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <Link to={`/admin/${e.slug}`} className="rn-btn rn-btn--secondary rn-btn--sm">
+                        Acessar
+                      </Link>
+                      <button
+                        type="button"
+                        className="rn-btn rn-btn--secondary rn-btn--sm"
+                        onClick={() => {
+                          setEditId(e.id);
+                          setForm({
+                            nome: e.nome,
+                            cnpj: e.cnpj || '',
+                            email: e.email,
+                            telefone: e.telefone || '',
+                          });
+                          setErro(null);
+                          setShowModal(true);
+                        }}
+                      >
+                        Editar
+                      </button>
+                      {e.slug !== 'default' && (
+                        <button
+                          type="button"
+                          className="rn-btn rn-btn--danger rn-btn--sm"
+                          onClick={() => handleDelete(e.id, e.slug)}
+                        >
+                          Deletar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        {loading ? (
-          <p className="text-gray-500">Carregando...</p>
-        ) : (
-          <div className="space-y-3">
-            {empresas.map((e) => (
-              <div key={e.id} className="bg-[#1a1d27] border border-gray-800 rounded-xl p-5 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-white">{e.nome}</p>
-                  <p className="text-sm text-gray-500">{e.email} | slug: {e.slug} {e.cnpj && `| CNPJ: ${e.cnpj}`}</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {e.total_mikrotiks || 0} mikrotiks | {e.total_planos || 0} planos | {e.total_admins || 0} admins
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    to={`/admin/${e.slug}`}
-                    className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded text-sm hover:bg-blue-600/30"
-                  >
-                    Acessar
-                  </Link>
-                  <button
-                    onClick={() => handleEdit(e)}
-                    className="px-3 py-1.5 bg-yellow-600/20 text-yellow-400 rounded text-sm hover:bg-yellow-600/30"
-                  >
-                    Editar
-                  </button>
-                  {e.slug !== 'default' && (
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      className="px-3 py-1.5 bg-red-600/20 text-red-400 rounded text-sm hover:bg-red-600/30"
-                    >
-                      Deletar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+      <AdminModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title={editId ? 'Editar empresa' : 'Nova empresa'}
+      >
+        <form onSubmit={handleSubmit}>
+          {erro && <div className="rn-alert rn-alert--danger" style={{ marginBottom: 12 }}>{erro}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="rn-field">
+              <label className="rn-label">Nome</label>
+              <input
+                type="text"
+                required
+                className="rn-input"
+                value={form.nome}
+                onChange={(ev) => setForm({ ...form, nome: ev.target.value })}
+              />
+            </div>
+            <div className="rn-field">
+              <label className="rn-label">Email</label>
+              <input
+                type="email"
+                required
+                className="rn-input"
+                value={form.email}
+                onChange={(ev) => setForm({ ...form, email: ev.target.value })}
+              />
+            </div>
+            <div className="rn-field">
+              <label className="rn-label">CNPJ</label>
+              <input
+                type="text"
+                className="rn-input"
+                value={form.cnpj}
+                onChange={(ev) => setForm({ ...form, cnpj: ev.target.value })}
+              />
+            </div>
+            <div className="rn-field">
+              <label className="rn-label">Telefone</label>
+              <input
+                type="text"
+                className="rn-input"
+                value={form.telefone}
+                onChange={(ev) => setForm({ ...form, telefone: ev.target.value })}
+              />
+            </div>
           </div>
-        )}
-
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <form onSubmit={handleSubmit} className="bg-[#1a1d27] border border-gray-800 rounded-xl p-6 w-full max-w-md">
-              <h2 className="text-lg font-bold text-white mb-4">
-                {editId ? "Editar Empresa" : "Nova Empresa"}
-              </h2>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Nome</label>
-                  <input
-                    type="text" required
-                    value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-gray-700 text-white rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Email</label>
-                  <input
-                    type="email" required
-                    value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-gray-700 text-white rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">CNPJ</label>
-                  <input
-                    type="text"
-                    value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-gray-700 text-white rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Telefone</label>
-                  <input
-                    type="text"
-                    value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-gray-700 text-white rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-500 text-sm">
-                  {editId ? "Salvar" : "Criar"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-700 text-gray-300 py-2 rounded-lg hover:bg-gray-600 text-sm"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+          <div className="rn-form-actions">
+            <button type="button" className="rn-btn rn-btn--secondary" onClick={() => setShowModal(false)}>
+              Cancelar
+            </button>
+            <button type="submit" className="rn-btn rn-btn--primary">
+              {editId ? 'Salvar' : 'Criar'}
+            </button>
           </div>
-        )}
-      </div>
-    </div>
+        </form>
+      </AdminModal>
+    </SuperAdminLayout>
   );
 }

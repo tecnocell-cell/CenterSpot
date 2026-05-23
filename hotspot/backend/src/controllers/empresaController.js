@@ -1,5 +1,6 @@
 const db = require("../../db");
 const { DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_PORTAL_PLANOS_CONFIG } = require("../constants/whatsappDefaults");
+const { audit } = require("../utils/audit");
 
 function gerarSlug(nome) {
   return nome
@@ -70,6 +71,7 @@ exports.criarEmpresa = async (req, res) => {
       ]
     );
 
+    await audit.create(req, 'empresa', empresaId, { nome, slug });
     res.status(201).json({ id: empresaId, nome, slug, email });
   } catch (err) {
     console.error("Erro ao criar empresa:", err);
@@ -87,6 +89,7 @@ exports.atualizarEmpresa = async (req, res) => {
       [nome, cnpj || null, email, telefone || null, logo_url || null, ativo !== undefined ? ativo : 1, id]
     );
 
+    await audit.update(req, 'empresa', id, { nome });
     res.json({ message: "Empresa atualizada" });
   } catch (err) {
     console.error("Erro ao atualizar empresa:", err);
@@ -105,6 +108,7 @@ exports.deletarEmpresa = async (req, res) => {
     }
 
     await db.execute('DELETE FROM empresas WHERE id = ?', [id]);
+    await audit.delete(req, 'empresa', id);
     res.json({ message: "Empresa deletada" });
   } catch (err) {
     console.error("Erro ao deletar empresa:", err);

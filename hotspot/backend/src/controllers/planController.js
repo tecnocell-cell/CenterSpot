@@ -1,8 +1,11 @@
 const db = require("../../db");
 const { RouterOSAPI } = require("node-routeros");
+const { audit } = require("../utils/audit");
+const { requireEmpresaId } = require("../utils/tenantAssert");
 
 // Criar plano
 const criarPlano = async (req, res) => {
+  if (requireEmpresaId(req, res) === false) return;
   try {
     const {
       nome, descricao, valor, duracao_minutos,
@@ -10,7 +13,7 @@ const criarPlano = async (req, res) => {
       mikrotik_id, address_pool, shared_users, ativo
     } = req.body;
 
-    await db.execute(`
+    const [result] = await db.execute(`
       INSERT INTO planos (
         empresa_id, nome, descricao, valor, duracao_minutos,
         velocidade_down, velocidade_up,
@@ -22,7 +25,7 @@ const criarPlano = async (req, res) => {
       velocidade_down, velocidade_up,
       mikrotik_id, address_pool, shared_users, ativo
     ]);
-
+    await audit.create(req, 'plano', result.insertId, { nome });
     res.status(201).json({ message: "Plano criado com sucesso" });
   } catch (err) {
     console.error("Erro ao criar plano:", err);
@@ -69,6 +72,7 @@ async function atualizarPlano(req, res) {
       address_pool, shared_users, ativo ? 1 : 0, id, req.empresa_id
     ]);
 
+    await audit.update(req, 'plano', id, { nome });
     res.json({ message: "Plano atualizado com sucesso" });
   } catch (err) {
     console.error("Erro ao atualizar plano:", err);
@@ -86,6 +90,7 @@ async function deletarPlano(req, res) {
 
     await db.execute("DELETE FROM planos WHERE id = ? AND empresa_id = ?", [id, req.empresa_id]);
 
+    await audit.delete(req, 'plano', id, { nome: plano.nome });
     res.json({ message: "Plano removido com sucesso" });
   } catch (err) {
     console.error("Erro ao deletar plano:", err);

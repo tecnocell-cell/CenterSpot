@@ -39,7 +39,10 @@ const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 }, fileFilt
 // Rota com auth (não precisa ser super_admin): buscar empresa por slug (sidebar)
 router.get("/by-slug/:slug", auth, async (req, res) => {
   try {
-    const [[empresa]] = await db.execute('SELECT id, nome, slug, logo_url FROM empresas WHERE slug = ?', [req.params.slug]);
+    const [[empresa]] = await db.execute(
+      'SELECT id, nome, slug, logo_url, favicon_url FROM empresas WHERE slug = ?',
+      [req.params.slug]
+    );
     if (!empresa) return res.status(404).json({ message: "Empresa não encontrada" });
     res.json(empresa);
   } catch (err) {

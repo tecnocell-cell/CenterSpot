@@ -7,6 +7,7 @@ import {
   themeToHexPickers,
   themeCfgMerge,
 } from '../../theme/themeConfig';
+import BrandingPanel from './BrandingPanel';
 
 const PICKER_FIELDS = [
   {
@@ -85,7 +86,7 @@ export default function ThemeEditor() {
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Restaurar o tema padrão CenterOS para esta empresa?')) return;
+    if (!window.confirm('Restaurar o tema padrão CenterSpot (azul) para esta empresa?')) return;
     setSaving(true);
     setError(null);
     try {
@@ -109,7 +110,9 @@ export default function ThemeEditor() {
   }
 
   return (
-    <div className="theme-editor-grid">
+    <>
+      <BrandingPanel />
+      <div className="theme-editor-grid">
       <div className="rn-card">
         <div className="rn-section-header">
           <span className="rn-section-title">
@@ -119,7 +122,7 @@ export default function ThemeEditor() {
         </div>
         <div style={{ padding: '12px 14px' }}>
           <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 14px', lineHeight: 1.5 }}>
-            Configure as cores do painel no mesmo padrão do <strong>CenterOS</strong>: barra lateral, menus ativos,
+            Configure as cores do painel no padrão <strong>CenterSpot</strong> (azul da marca): barra lateral, menus ativos,
             botões e campos. A pré-visualização atualiza em tempo real; clique em <strong>Salvar aparência</strong> para
             gravar para todos os usuários desta empresa.
           </p>
@@ -177,7 +180,7 @@ export default function ThemeEditor() {
             </button>
             <button type="button" className="rn-btn rn-btn--secondary rn-btn--sm" onClick={handleReset} disabled={saving}>
               <RefreshCw size={14} />
-              Restaurar padrão CenterOS
+              Restaurar padrão CenterSpot
             </button>
           </div>
         </div>
@@ -213,5 +216,6 @@ export default function ThemeEditor() {
         </div>
       </div>
     </div>
+    </>
   );
 }

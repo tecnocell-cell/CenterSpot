@@ -1,0 +1,8 @@
+# CenterSpot — backup diário às 03:00
+# Instalar: sudo cp cron-centerspot-backup.example /etc/cron.d/centerspot-backup
+#          sudo chmod 644 /etc/cron.d/centerspot-backup
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+0 3 * * * root /var/www/hotspot/backend/scripts/backup.sh >> /var/log/centerspot-backup.log 2>&1

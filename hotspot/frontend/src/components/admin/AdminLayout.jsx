@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useBranding } from "../../contexts/BrandingContext";
 import AdminTopBar from "./AdminTopBar";
 import { resolveAdminPageTitle } from "../../utils/adminPageTitle";
 
@@ -9,6 +10,7 @@ export default function AdminLayout({ children }) {
   const location = useLocation();
   const { empresaSlug } = useParams();
   const { user, logout, isSuperAdmin, empresas, switchEmpresa, hasPermission } = useAuth();
+  const { branding } = useBranding();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [switchingEmpresa, setSwitchingEmpresa] = useState(false);
   const [openMenus, setOpenMenus] = useState({});
@@ -24,16 +26,26 @@ export default function AdminLayout({ children }) {
     const fetchWhatsappStatus = async () => {
       try {
         const token = localStorage.getItem("admin_token");
-        const res = await fetch("/api/whatsapp/instance/status", {
+        const res = await fetch("/api/whatsapp/status", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) setWhatsappStatus(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setWhatsappStatus({
+            ...data,
+            exists: data.status !== "instancia_inexistente",
+            state: data.conectado ? "open" : data.qr_pendente ? "connecting" : "close",
+          });
+        }
       } catch {
         /* silencioso */
       }
     };
     setWhatsappAvisoFechado(sessionStorage.getItem(`wa_aviso_fechado_${slug}`) === "1");
-    if (slug) fetchWhatsappStatus();
+    if (!slug) return undefined;
+    fetchWhatsappStatus();
+    const id = setInterval(fetchWhatsappStatus, 45000);
+    return () => clearInterval(id);
   }, [slug]);
 
   const fecharAvisoWhatsapp = () => {
@@ -42,7 +54,7 @@ export default function AdminLayout({ children }) {
   };
 
   const whatsappDesconectado =
-    whatsappStatus && (!whatsappStatus.exists || whatsappStatus.state !== "open");
+    whatsappStatus && (whatsappStatus.conectado === false || (!whatsappStatus.exists && whatsappStatus.state !== "open"));
   const mostrarAvisoWhatsapp =
     whatsappDesconectado && !whatsappAvisoFechado && !location.pathname.includes("/whatsapp");
 
@@ -248,16 +260,25 @@ export default function AdminLayout({ children }) {
       )}
 
       <aside className={`rn-admin-sidebar ${sidebarOpen ? "open" : ""}`}>
-        {isSuperAdmin && (
-          <div className="rn-admin-sidebar__head">
-            <Link to="/super" className="rn-nav-item rn-super-link" onClick={() => setSidebarOpen(false)}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span>Painel Super Admin</span>
-            </Link>
-          </div>
-        )}
+        <div className="rn-admin-sidebar__brand-block">
+          <Link to={basePath} className="rn-sidebar-logo-link" onClick={() => setSidebarOpen(false)}>
+            <img
+              src={branding.logo_url}
+              alt={branding.empresa_nome || user?.empresa_nome || "CenterSpot"}
+              className="rn-sidebar-logo"
+            />
+          </Link>
+          {isSuperAdmin && (
+            <div className="rn-admin-sidebar__head" style={{ padding: 0, border: "none" }}>
+              <Link to="/super" className="rn-nav-item rn-super-link" onClick={() => setSidebarOpen(false)}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span>Painel Super Admin</span>
+              </Link>
+            </div>
+          )}
+        </div>
 
         <nav className="rn-admin-sidebar__nav">
           {filteredMenuItems.map((item) => {
@@ -322,8 +343,7 @@ export default function AdminLayout({ children }) {
 
         <div className="rn-admin-sidebar__footer">
           <div className="rn-sidebar-footer__brand">
-            <strong>CenterSpot</strong>
-            <span> · Hotspot &amp; WhatsApp</span>
+            <span>Hotspot &amp; WhatsApp</span>
           </div>
           <p className="rn-sidebar-footer__credit">
             Desenvolvido por <strong>Center Tech</strong>

@@ -21,6 +21,9 @@ frontend/public/uploads/
 # WireGuard
 infra/wireguard/.wg-easy/
 
+# Smoke tests MP (relatórios locais, podem conter ids de pagamento)
+backend/reports/
+
 # Backups e temporários
 *.bak
 *.swp

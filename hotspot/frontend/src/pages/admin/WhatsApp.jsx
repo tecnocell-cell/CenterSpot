@@ -37,7 +37,11 @@ export default function WhatsApp() {
     fetchStatus();
     fetchConfig();
     fetchLogs();
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+    const auto = setInterval(fetchStatus, 20000);
+    return () => {
+      clearInterval(auto);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
   useEffect(() => { fetchLogs(); /* eslint-disable-next-line */ }, [logsPage, logsFilter.status]);
@@ -117,11 +121,19 @@ export default function WhatsApp() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch("/api/whatsapp/instance/status", { headers });
+      const res = await fetch("/api/whatsapp/status", { headers });
       const data = await res.json();
-      setStatus(data);
+      const mapped = {
+        ...(data.raw || {}),
+        exists: data.status !== "instancia_inexistente",
+        state: data.conectado ? "open" : data.qr_pendente ? "connecting" : data.raw?.state || "close",
+        status_label: data.status,
+        conectado: data.conectado,
+        qr_pendente: data.qr_pendente,
+      };
+      setStatus(mapped);
       // Se estava mostrando QR e agora conectou, limpar QR
-      if (data.state === "open") {
+      if (mapped.state === "open") {
         setQrCode(null);
         if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       }

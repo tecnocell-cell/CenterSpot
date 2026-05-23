@@ -1,16 +1,27 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
 const path = require('path')
+const appConfig = require('./src/config/app')
+const logger = require('./src/utils/logger')
+const requestIp = require('./src/middleware/requestIp')
+const {
+  loginLimiter,
+  authLimiter,
+  paymentsLimiter,
+  webhooksLimiter,
+  whatsappLimiter,
+} = require('./src/middleware/rateLimit')
 const app = express()
 
 // Prevenir crash do processo por erros não tratados do node-routeros (!empty)
 process.on('uncaughtException', (err) => {
   if (err.errno === 'UNKNOWNREPLY' || (err.message && err.message.includes('!empty'))) {
-    console.warn('RouterOS !empty reply handled (non-fatal)');
+    logger.warn('process', 'RouterOS !empty reply handled (non-fatal)');
     return;
   }
-  console.error('Uncaught Exception:', err);
+  logger.error('process', 'Uncaught Exception', err.message);
   process.exit(1);
 });
 
@@ -49,6 +60,9 @@ const grupoPermissaoRoutes = require("./src/routes/grupoPermissaoRoutes");
 const loginPortalRoutes = require("./src/routes/loginPortalRoutes");
 const systemBackupRoutes = require("./src/routes/systemBackupRoutes");
 const systemUpdateRoutes = require("./src/routes/systemUpdateRoutes");
+const systemRoutes = require("./src/routes/systemRoutes");
+const brandingRoutes = require("./src/routes/brandingRoutes");
+const brandingController = require("./src/controllers/brandingController");
 const db = require("./db");
 
 // Rotas exclusivas do servidor principal (OTA updates) - não existem nos servidores de alunos
@@ -56,8 +70,13 @@ const fs = require('fs');
 const updatePublishRoutes = fs.existsSync(__dirname + '/src/routes/updatePublishRoutes.js') ? require("./src/routes/updatePublishRoutes") : null;
 const updateCheckRoutes = fs.existsSync(__dirname + '/src/routes/updateCheckRoutes.js') ? require("./src/routes/updateCheckRoutes") : null;
 
+app.set('trust proxy', 1)
+if (appConfig.flags.helmetEnabled) {
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
+}
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '2mb' }))
+app.use(requestIp)
 
 // Servir arquivos de campanhas (publicos, com cache de 1 dia)
 app.use('/uploads/campanhas',
@@ -68,13 +87,19 @@ app.use('/uploads/campanhas',
 );
 
 // --- Rotas públicas (sem auth) ---
+app.use('/api/admin/login', loginLimiter)
+app.use('/api/auth/login', loginLimiter)
 app.use('/api/admin', adminRoutes)          // Login
-app.use('/api/auth', authRoutes)            // Auth
+app.use('/api/auth', authLimiter, authRoutes)            // Auth
 app.use('/api/auth', authTempRoutes)        // Acesso temporário
 app.use("/api/planos-publicos", planPublicRoutes);
-app.use("/api/pagamentos", pagamentoRoutes);  // Inclui webhook público
+app.use("/api/pagamentos/notificacao", webhooksLimiter)
+app.use("/api/pagamentos", paymentsLimiter, pagamentoRoutes);  // Inclui webhook público
 app.use("/api/lgpd", lgpdRoutes);             // LGPD login/cadastro são públicos
 app.use("/api/registro", registroRoutes);       // Registro público de empresas
+
+app.get("/api/public/branding", brandingController.getPublicBranding);
+app.get("/api/public/branding/:slug", brandingController.getPublicBranding);
 
 app.use("/api/public/campanha", campanhasPublicRoutes);
 
@@ -95,7 +120,7 @@ app.use("/api/efi", auth, tenant, checkPermissao('configuracoes'), efiRoutes);
 app.use("/api/config-mercadopago", auth, tenant, checkPermissao('configuracoes'), mercadoPagoRoutes);
 app.use('/api/radius', auth, tenant, radiusRoutes);
 app.use("/api/dashboard", auth, tenant, checkPermissao('dashboard'), dashboardRoutes);
-app.use("/api/whatsapp", auth, tenant, checkPermissao('configuracoes'), whatsappRoutes);
+app.use("/api/whatsapp", auth, tenant, checkPermissao('configuracoes'), whatsappLimiter, whatsappRoutes);
 app.use("/api/limpeza", auth, tenant, checkPermissao('configuracoes'), limpezaRoutes);
 app.use("/api/radius-logs", auth, tenant, checkPermissao('sessoeslog'), radiusLogsRoutes);
 app.use("/api/admins", auth, tenant, checkPermissao('usuarios'), adminUserRoutes);
@@ -105,6 +130,7 @@ app.use("/api/campanhas", auth, tenant, checkPermissao('portais'), campanhasRout
 app.use("/api/portal-templates", auth, tenant, checkPermissao('portais'), portalTemplateRoutes);
 app.use("/api/leads", auth, tenant, checkPermissao('leads'), leadRoutes);
 app.use("/api/compliance", auth, tenant, checkPermissao('compliance'), complianceRoutes);
+app.use("/api/empresa-config/branding", auth, tenant, checkPermissao('configuracoes'), brandingRoutes);
 app.use("/api/empresa-config", auth, tenant, checkPermissao('configuracoes'), empresaConfigRoutes);
 
 // Rota pública: config visual do portal (sem auth)
@@ -116,6 +142,7 @@ app.use("/api/empresas", empresaRoutes);  // Auth + authorize interno
 app.use("/api/grupos-permissao", grupoPermissaoRoutes); // Auth + authorize interno
 app.use("/api/system-backup", systemBackupRoutes);
 app.use("/api/system-update", systemUpdateRoutes);
+app.use("/api/system", systemRoutes);
 if (updatePublishRoutes) app.use("/api/update-publish", updatePublishRoutes);
 if (updateCheckRoutes) app.use("/api/updates", updateCheckRoutes);
 
@@ -455,8 +482,8 @@ const syncConnectionLogs = require('./src/jobs/syncConnectionLogs');
 
 // Sincronizar logs de conexão do RADIUS (Marco Civil) a cada 5 minutos
 cron.schedule('*/5 * * * *', () => {
-  console.log('[CRON] Iniciando syncConnectionLogs...');
-  syncConnectionLogs().catch(err => console.error('[CRON] Erro:', err));
+  logger.info('cron', 'Iniciando syncConnectionLogs...');
+  syncConnectionLogs().catch(err => logger.error('cron', 'syncConnectionLogs', err.message));
 });
 
 // --- Tela de emergencia (SEM auth) ---
@@ -468,6 +495,6 @@ app.get('/api/emergency/backups', systemBackupCtrl.listarBackups);
 app.post('/api/emergency/backup', systemBackupCtrl.criarBackup);
 app.post('/api/emergency/restore/:id', systemBackupCtrl.restaurarBackup);
 
-app.listen(process.env.PORT || 3001, () => {
-  console.log(`API rodando na porta ${process.env.PORT || 3001}`)
+app.listen(appConfig.server.port, () => {
+  logger.info('server', `API rodando na porta ${appConfig.server.port}`)
 })

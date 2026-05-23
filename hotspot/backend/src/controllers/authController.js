@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const Admin = require('../models/Admin')
+const appConfig = require('../config/app')
+const { audit } = require('../utils/audit')
 const { getPermissoesConsolidadas, MODULOS } = require('./grupoPermissaoController')
 
 exports.login = async (req, res) => {
@@ -9,6 +11,10 @@ exports.login = async (req, res) => {
   const user = await Admin.findByEmail(email)
 
   if (!user) return res.status(401).json({ error: 'Usuário não encontrado' })
+
+  if (!Admin.isLoginAllowed(user)) {
+    return res.status(403).json({ error: 'Conta desativada. Contate o administrador.' })
+  }
 
   const match = await bcrypt.compare(pass, user.password)
   if (!match) return res.status(401).json({ error: 'Senha incorreta' })
@@ -32,8 +38,8 @@ exports.login = async (req, res) => {
       empresa_nome: empresaAtiva?.nome || user.empresa_nome || 'Empresa Padrão',
       role: user.role || 'operator'
     },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
+    appConfig.jwt.secret,
+    { expiresIn: appConfig.jwt.expiresIn }
   )
 
   // Buscar permissões consolidadas do admin
@@ -43,6 +49,8 @@ exports.login = async (req, res) => {
   } else {
     permissoes = await getPermissoesConsolidadas(user.id);
   }
+
+  await audit.login(req, user.id, { email: user.email, role: user.role })
 
   res.json({
     token,
@@ -92,8 +100,8 @@ exports.switchEmpresa = async (req, res) => {
         empresa_nome: empresaData.nome,
         role: req.user.role
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      appConfig.jwt.secret,
+      { expiresIn: appConfig.jwt.expiresIn }
     );
 
     res.json({

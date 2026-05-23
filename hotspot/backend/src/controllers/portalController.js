@@ -1,5 +1,6 @@
 const db = require("../../db");
 const { DEFAULT_WHATSAPP_TEMPLATE } = require("../constants/whatsappDefaults");
+const { audit } = require("../utils/audit");
 
 exports.listarPortais = async (req, res) => {
   try {
@@ -38,7 +39,7 @@ exports.criarPortal = async (req, res) => {
       if (tmpl) finalHtml = tmpl.html_template;
     }
 
-    await db.execute(
+    const [ins] = await db.execute(
       `INSERT INTO portais (empresa_id, nome, slug, tipo, url_redirect, html_content, descricao,
         template_id, custom_css, logo_url, cor_primaria, cor_fundo, campos_cadastro, mostrar_planos, mostrar_lgpd,
         whatsapp_template)
@@ -59,6 +60,7 @@ exports.criarPortal = async (req, res) => {
         DEFAULT_WHATSAPP_TEMPLATE
       ]
     );
+    await audit.create(req, 'portal', ins.insertId, { nome, slug });
     res.status(201).json({ message: "Portal criado com sucesso" });
   } catch (err) {
     console.error("Erro ao criar portal:", err);
@@ -115,6 +117,7 @@ exports.atualizarPortal = async (req, res) => {
         req.empresa_id
       ]
     );
+    await audit.update(req, 'portal', id, { nome: nome || portal.nome });
     res.json({ message: "Portal atualizado" });
   } catch (err) {
     console.error("Erro ao atualizar portal:", err);
@@ -224,6 +227,7 @@ exports.deletarPortal = async (req, res) => {
 
     await db.execute("UPDATE mikrotiks SET portal_id = NULL WHERE portal_id = ? AND empresa_id = ?", [id, req.empresa_id]);
     await db.execute("DELETE FROM portais WHERE id = ? AND empresa_id = ?", [id, req.empresa_id]);
+    await audit.delete(req, 'portal', id);
     res.json({ message: "Portal removido" });
   } catch (err) {
     console.error("Erro ao deletar portal:", err);

@@ -5,16 +5,18 @@ const { v4: uuidv4 } = require("uuid");
 
 const UPLOAD_ROOT = path.join(__dirname, "../../uploads/campanhas");
 
-const ALLOWED_MIMES = {
-  "image/jpeg": { tipo: "imagem", ext: ".jpg" },
-  "image/png":  { tipo: "imagem", ext: ".png" },
-  "image/webp": { tipo: "imagem", ext: ".webp" },
-  "video/mp4":  { tipo: "video",  ext: ".mp4" },
-  "video/webm": { tipo: "video",  ext: ".webm" },
-};
+const {
+  IMAGE_MIMES,
+  VIDEO_MIMES,
+  validateUploadFile,
+  MAX_IMAGE_BYTES,
+  MAX_VIDEO_BYTES,
+} = require("../utils/uploadSecurity");
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_MIMES = {
+  ...Object.fromEntries(Object.entries(IMAGE_MIMES).map(([m, ext]) => [m, { tipo: "imagem", ext }])),
+  ...Object.fromEntries(Object.entries(VIDEO_MIMES).map(([m, ext]) => [m, { tipo: "video", ext }])),
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -32,11 +34,13 @@ const storage = multer.diskStorage({
 });
 
 function fileFilter(req, file, cb) {
-  if (ALLOWED_MIMES[file.mimetype]) {
-    cb(null, true);
-  } else {
-    cb(new Error("Tipo de arquivo não permitido. Use JPEG, PNG, WebP, MP4 ou WebM."));
-  }
+  const check = validateUploadFile(file, {
+    allowedMimes: { ...IMAGE_MIMES, ...VIDEO_MIMES },
+    maxBytes: MAX_VIDEO_BYTES,
+    label: "mídia da campanha",
+  });
+  if (!check.ok) cb(new Error(check.error));
+  else cb(null, true);
 }
 
 const uploadCampanha = multer({

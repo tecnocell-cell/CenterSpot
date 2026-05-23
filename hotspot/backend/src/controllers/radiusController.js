@@ -1,5 +1,6 @@
 // backend/src/controllers/radiusController.js
 const db = require('../../db');
+const { audit } = require('../utils/audit');
 
 // Cria um novo usuário no FreeRADIUS com isolamento por empresa
 async function criarUsuarioRadius(req, res) {
@@ -34,6 +35,7 @@ async function criarUsuarioRadius(req, res) {
       ON DUPLICATE KEY UPDATE empresa_id = VALUES(empresa_id)
     `, [req.empresa_id, username]);
 
+    await audit.create(req, 'radius_user', username, { username });
     res.status(201).json({ message: 'Usuário RADIUS criado com sucesso.' });
   } catch (error) {
     console.error('Erro ao criar usuário RADIUS:', error);
@@ -154,6 +156,7 @@ async function deletarUsuarioRadius(req, res) {
     await db.query('DELETE FROM radpostauth WHERE username = ?', [username]);
     await db.query('DELETE FROM radius_users WHERE username = ?', [username]);
 
+    await audit.delete(req, 'radius_user', username, { username });
     res.status(200).json({ message: 'Usuário RADIUS deletado com sucesso.' });
   } catch (error) {
     console.error('Erro ao deletar usuário RADIUS:', error);

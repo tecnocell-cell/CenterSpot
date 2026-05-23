@@ -3,6 +3,9 @@ const router = express.Router()
 const db = require("../db")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const Admin = require("../src/models/Admin")
+const appConfig = require("../src/config/app")
+const { audit } = require("../src/utils/audit")
 
 router.post('/login', async (req, res) => {
   const { email, senha } = req.body;
@@ -19,6 +22,10 @@ router.post('/login', async (req, res) => {
 
     if (!admin) {
       return res.status(401).json({ message: 'Credenciais inválidas' });
+    }
+
+    if (!Admin.isLoginAllowed(admin)) {
+      return res.status(403).json({ message: 'Conta desativada. Contate o administrador.' });
     }
 
     if (!senha || !admin.password) {
@@ -38,9 +45,11 @@ router.post('/login', async (req, res) => {
         empresa_slug: admin.empresa_slug || 'default',
         role: admin.role || 'operator'
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      appConfig.jwt.secret,
+      { expiresIn: appConfig.jwt.expiresIn }
     );
+
+    await audit.login(req, admin.id, { email: admin.email, route: '/api/admin/login' });
 
     res.json({
       token,

@@ -29,6 +29,7 @@ import SuperDashboard from "./pages/super/SuperDashboard";
 import Backups from "./pages/super/Backups";
 import AtualizarSistema from "./pages/super/AtualizarSistema";
 import PublicarAtualizacao from "./pages/super/PublicarAtualizacao";
+import SystemHealth from "./pages/super/SystemHealth";
 
 import PlanosCliente from "./pages/public/PlanosCliente";
 import Pagamento from "./pages/public/Pagamento";
@@ -105,6 +106,7 @@ function App() {
       <Route path="/super/empresas" element={<RotaPrivada><Empresas /></RotaPrivada>} />
       <Route path="/super/atualizar" element={<RotaPrivada><AtualizarSistema /></RotaPrivada>} />
       <Route path="/super/backups" element={<RotaPrivada><Backups /></RotaPrivada>} />
+      <Route path="/super/system" element={<RotaPrivada><SystemHealth /></RotaPrivada>} />
       <Route path="/super/publicar-atualizacao" element={<RotaPrivada><PublicarAtualizacao /></RotaPrivada>} />
     </Routes>
   );

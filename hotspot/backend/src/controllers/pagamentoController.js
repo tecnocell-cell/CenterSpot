@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
 const { liberarUsuario } = require("./mikrotikAPIController");
 const { gerarAcessoTemporario } = require("./authTempController");
+const { audit } = require('../utils/audit');
 
 // Resolve empresa_id a partir do plano (para endpoints públicos)
 async function resolveEmpresaId(planoId) {
@@ -925,6 +926,7 @@ exports.liberarManual = async (req, res) => {
       [duracao, id, req.empresa_id]
     );
 
+    await audit.action(req, 'pagamento_manual', 'pagamento', id, { mac });
     res.json({ message: "Usuário liberado manualmente." });
   } catch (error) {
     console.error("Erro ao liberar manualmente:", error.message);

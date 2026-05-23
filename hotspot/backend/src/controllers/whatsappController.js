@@ -1,5 +1,7 @@
 const axios = require("axios");
 const db = require("../../db");
+const appConfig = require("../config/app");
+const { audit } = require("../utils/audit");
 
 // Fallback global do .env (usado se empresa nao tiver config propria)
 const DEFAULT_API_URL = process.env.EVOLUTION_API_URL || "http://localhost:8080";
@@ -106,6 +108,63 @@ function offlineStatus(instanceName, reason) {
     instance_name: instanceName || null,
     ...(reason ? { reason } : {}),
   };
+}
+
+/** Mapeia estado Evolution para API simplificada /api/whatsapp/status */
+function mapWhatsAppPublicStatus(raw) {
+  if (!raw || raw.exists === false) {
+    const st = raw?.state;
+    if (st === 'not_created') {
+      return { status: 'instancia_inexistente', conectado: false, qr_pendente: false };
+    }
+    return { status: 'desconectado', conectado: false, qr_pendente: false, reason: raw?.reason };
+  }
+  const state = String(raw.state || '').toLowerCase();
+  if (state === 'open' || state === 'connected') {
+    return { status: 'conectado', conectado: true, qr_pendente: false, instance_name: raw.instance_name };
+  }
+  if (state === 'connecting' || state === 'qrcode' || state === 'qr') {
+    return { status: 'qr_pendente', conectado: false, qr_pendente: true, instance_name: raw.instance_name };
+  }
+  return { status: 'desconectado', conectado: false, qr_pendente: false, instance_name: raw.instance_name, state };
+}
+
+async function fetchInstanceStatusData(empresaId) {
+  const evo = await getEvolutionConfig(empresaId);
+  try {
+    const instResp = await axios.get(`${evo.apiUrl}/instance/fetchInstances`, {
+      headers: evoHeaders(evo.apiKey),
+      timeout: appConfig?.evolution?.timeoutMs || 8000,
+    });
+    const list = Array.isArray(instResp.data) ? instResp.data : [];
+    const instance = list.find((i) => i.name === evo.instanceName);
+    if (!instance) {
+      return { exists: false, instance_name: evo.instanceName, state: 'not_created' };
+    }
+    let state = instance.connectionStatus || 'unknown';
+    try {
+      const stateResp = await axios.get(`${evo.apiUrl}/instance/connectionState/${evo.instanceName}`, {
+        headers: evoHeaders(evo.apiKey),
+        timeout: 8000,
+      });
+      state = stateResp.data?.instance?.state || state;
+    } catch (e) {
+      /* ignore */
+    }
+    return { exists: true, instance_name: instance.name, state };
+  } catch (err) {
+    return offlineStatus(evo.instanceName, 'evolution_unreachable');
+  }
+}
+
+async function getWhatsAppStatus(req, res) {
+  try {
+    const raw = await fetchInstanceStatusData(req.empresa_id);
+    const mapped = mapWhatsAppPublicStatus(raw);
+    res.json({ ...mapped, raw });
+  } catch (err) {
+    res.json(mapWhatsAppPublicStatus(offlineStatus(null, 'config_error')));
+  }
 }
 
 async function getInstanceStatus(req, res) {
@@ -287,6 +346,9 @@ async function saveConfig(req, res) {
       );
     }
 
+    await audit.action(req, 'config_whatsapp', 'empresa_config', req.empresa_id, {
+      instance_name: instance_name || `empresa_${req.empresa_id}`,
+    });
     res.json({ success: true });
   } catch (err) {
     console.error("Erro ao salvar config WhatsApp:", err.message);
@@ -396,6 +458,7 @@ async function limparLogs(req, res) {
 module.exports = {
   enviarMensagem,
   enviarMensagemDireta,
+  getWhatsAppStatus,
   getInstanceStatus,
   createInstance,
   getQrCode,

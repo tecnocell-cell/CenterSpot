@@ -66,7 +66,13 @@ export function ThemeProvider({ children }) {
       if (cancelled) return;
 
       const local = loadStoredTheme();
-      const next = remote || local;
+      // Tema salvo no servidor com paleta antiga (verde): preferir padrão azul local até o usuário salvar de novo
+      const remoteIsLegacyGreen =
+        remote?.theme_sidebar_bg &&
+        (remote.theme_sidebar_bg.toLowerCase().includes('1a2e28') ||
+          remote.theme_sidebar_bg.toLowerCase().includes('2e5248') ||
+          remote.theme_indicator?.toLowerCase().includes('8dd55a'));
+      const next = remote && !remoteIsLegacyGreen ? remote : local;
       setTheme(next);
       applyThemeFromCfg(next);
       if (remote) saveStoredTheme(remote);

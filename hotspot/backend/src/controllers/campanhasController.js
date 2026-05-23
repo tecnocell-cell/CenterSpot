@@ -2,6 +2,7 @@ const path = require("path");
 const fs   = require("fs");
 const db   = require("../../db");
 const { ALLOWED_MIMES, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, UPLOAD_ROOT } = require("../middleware/uploadCampanha");
+const { audit } = require("../utils/audit");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRUD Campanhas
@@ -38,6 +39,7 @@ exports.criar = async (req, res) => {
       "SELECT * FROM campanhas WHERE id = ?",
       [result.insertId]
     );
+    await audit.create(req, 'campanha', result.insertId, { nome });
     res.status(201).json({ success: true, data: campanha });
   } catch (err) {
     console.error("Erro ao criar campanha:", err);
@@ -94,6 +96,7 @@ exports.atualizar = async (req, res) => {
       "SELECT * FROM campanhas WHERE id = ?",
       [id]
     );
+    await audit.update(req, 'campanha', id, { nome });
     res.json({ success: true, data: campanha });
   } catch (err) {
     console.error("Erro ao atualizar campanha:", err);
@@ -120,6 +123,7 @@ exports.deletar = async (req, res) => {
       "DELETE FROM campanhas WHERE id = ? AND empresa_id = ?",
       [id, req.empresa_id]
     );
+    await audit.delete(req, 'campanha', id, { nome: campanha.nome });
     res.json({ success: true, message: "Campanha removida com sucesso" });
   } catch (err) {
     console.error("Erro ao deletar campanha:", err);

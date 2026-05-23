@@ -128,6 +128,8 @@ router.delete("/:id", async (req, res) => {
     }
 
     reloadFreeRADIUS();
+    const { audit } = require('../utils/audit');
+    await audit.delete(req, 'mikrotik', id, { ip });
     res.json({ message: "Removido com sucesso." });
   } catch (err) {
     console.error("❌ Erro ao deletar Mikrotik/NAS:", err);

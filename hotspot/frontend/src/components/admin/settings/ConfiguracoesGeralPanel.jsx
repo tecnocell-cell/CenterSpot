@@ -6,7 +6,7 @@ const SECOES = [
     id: 'aparencia',
     icon: Palette,
     title: 'Aparência',
-    desc: 'Cores do painel, temas rápidos e pré-visualização no padrão CenterOS.',
+    desc: 'Logo, favicon e cores do painel no padrão azul CenterSpot.',
   },
   {
     id: 'usuarios',

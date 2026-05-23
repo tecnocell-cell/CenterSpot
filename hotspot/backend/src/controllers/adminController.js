@@ -1,5 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/Admin");
+const { audit } = require("../utils/audit");
+const { requireEmpresaId } = require("../utils/tenantAssert");
 
 const EMPRESA_ROLES = new Set(["owner", "manager", "operator"]);
 
@@ -24,9 +26,7 @@ const criarAdmin = async (req, res) => {
     return res.status(400).json({ message: "Email e senha são obrigatórios" });
   }
 
-  if (!req.empresa_id) {
-    return res.status(403).json({ message: "Empresa não identificada" });
-  }
+  if (requireEmpresaId(req, res) === false) return;
 
   const globalRole = role || "operator";
   if (globalRole === "super_admin" && req.user.role !== "super_admin") {
@@ -46,6 +46,7 @@ const criarAdmin = async (req, res) => {
     );
     await Admin.linkEmpresa(adminId, req.empresa_id, empresaRole);
 
+    await audit.create(req, "admin", adminId, { email, role: globalRole });
     res.status(201).json({ message: "Administrador criado com sucesso", id: adminId });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -88,6 +89,7 @@ const atualizarAdmin = async (req, res) => {
       await Admin.updatePassword(targetId, hash);
     }
 
+    await audit.update(req, "admin", targetId, { email });
     res.json({ message: "Administrador atualizado com sucesso" });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -138,8 +140,9 @@ const deletarAdmin = async (req, res) => {
       }
     }
 
-    await Admin.remove(targetId);
-    res.json({ message: "Administrador removido com sucesso" });
+    await Admin.softDelete(targetId);
+    await audit.delete(req, "admin", targetId);
+    res.json({ message: "Administrador desativado com sucesso" });
   } catch (err) {
     console.error("Erro ao deletar admin:", err);
     res.status(500).json({ message: "Erro interno ao remover administrador" });

@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = 'hotspot_theme_centeros';
+export const THEME_STORAGE_KEY = 'hotspot_theme_centerspot_v2';
 
 export const THEME_KEYS = [
   'theme_indicator',
@@ -13,47 +13,48 @@ export const THEME_KEYS = [
   'theme_field_bg',
 ];
 
-/** Padrão CenterOS (verde institucional) */
+/** Padrão CenterSpot (azul institucional da logo) */
 export const THEME_DEFAULTS = {
-  theme_indicator: 'oklch(0.72 0.16 145)',
-  theme_sidebar_bg: 'oklch(0.24 0.05 155)',
-  theme_sidebar_text: 'oklch(0.985 0.003 145)',
-  theme_menu_active: 'oklch(0.72 0.16 145)',
+  theme_indicator: '#5eb3ff',
+  theme_sidebar_bg: '#0f2847',
+  theme_sidebar_text: '#f0f6fc',
+  theme_menu_active: '#5eb3ff',
   theme_menu_active_bg: '',
-  theme_btn_primary: 'oklch(0.34 0.07 155)',
-  theme_btn_primary_hover: 'oklch(0.29 0.05 155)',
-  theme_field_border: 'oklch(0.925 0.004 150)',
-  theme_field_focus: 'oklch(0.42 0.08 155)',
-  theme_field_bg: 'oklch(0.972 0.003 150)',
+  theme_btn_primary: '#1a6fd4',
+  theme_btn_primary_hover: '#1558ad',
+  theme_field_border: '#d4e3f0',
+  theme_field_focus: '#2b7fd4',
+  theme_field_bg: '#f2f7fc',
 };
 
 export const THEME_HEX_FALLBACK = {
-  theme_indicator: '#8dd55a',
-  theme_sidebar_bg: '#1a2e28',
-  theme_sidebar_text: '#f8fcfa',
-  theme_menu_active: '#8dd55a',
-  theme_menu_active_bg: '#232f2b',
-  theme_btn_primary: '#2e5248',
-  theme_btn_primary_hover: '#243f38',
-  theme_field_border: '#e8ece9',
-  theme_field_focus: '#3d6b5c',
-  theme_field_bg: '#f4f7f5',
+  theme_indicator: '#5eb3ff',
+  theme_sidebar_bg: '#0f2847',
+  theme_sidebar_text: '#f0f6fc',
+  theme_menu_active: '#5eb3ff',
+  theme_menu_active_bg: '#1a3558',
+  theme_btn_primary: '#1a6fd4',
+  theme_btn_primary_hover: '#1558ad',
+  theme_field_border: '#d4e3f0',
+  theme_field_focus: '#2b7fd4',
+  theme_field_bg: '#f2f7fc',
 };
 
 export const THEME_PRESETS = {
+  centerspot: { ...THEME_DEFAULTS },
   centeros: { ...THEME_DEFAULTS },
-  verde: { ...THEME_DEFAULTS },
-  azul: {
-    theme_indicator: '#6eb5f0',
-    theme_sidebar_bg: '#152a3d',
-    theme_sidebar_text: '#f0f6fc',
-    theme_menu_active: '#6eb5f0',
-    theme_menu_active_bg: '#1e3a52',
-    theme_btn_primary: '#2563a8',
-    theme_btn_primary_hover: '#1a4d82',
-    theme_field_border: '#d4e0eb',
-    theme_field_focus: '#3b82c4',
-    theme_field_bg: '#f2f6fa',
+  azul: { ...THEME_DEFAULTS },
+  verde: {
+    theme_indicator: '#8dd55a',
+    theme_sidebar_bg: '#1a2e28',
+    theme_sidebar_text: '#f8fcfa',
+    theme_menu_active: '#8dd55a',
+    theme_menu_active_bg: '#232f2b',
+    theme_btn_primary: '#2e5248',
+    theme_btn_primary_hover: '#243f38',
+    theme_field_border: '#e8ece9',
+    theme_field_focus: '#3d6b5c',
+    theme_field_bg: '#f4f7f5',
   },
   laranja: {
     theme_indicator: '#f0a070',
@@ -106,8 +107,8 @@ export const THEME_PRESETS = {
 };
 
 export const PRESET_META = [
-  { id: 'centeros', label: 'CenterOS', color: '#8dd55a' },
-  { id: 'azul', label: 'Azul', color: '#6eb5f0' },
+  { id: 'centerspot', label: 'CenterSpot', color: '#5eb3ff' },
+  { id: 'verde', label: 'Verde', color: '#8dd55a' },
   { id: 'laranja', label: 'Laranja', color: '#f0a070' },
   { id: 'roxo', label: 'Roxo', color: '#b89af0' },
   { id: 'dourado', label: 'Dourado', color: '#d4c060' },
@@ -117,7 +118,7 @@ export const PRESET_META = [
 export function themeMenuActiveBg(t) {
   const custom = (t.theme_menu_active_bg || '').trim();
   if (custom) return custom;
-  return `color-mix(in oklab, white 6%, ${t.theme_sidebar_bg})`;
+  return `color-mix(in oklab, white 8%, ${t.theme_sidebar_bg})`;
 }
 
 export function themeCfgMerge(cfg) {
@@ -153,6 +154,8 @@ export function applyThemeFromCfg(cfg) {
   root.style.setProperty('--forest-50', `color-mix(in oklab, ${t.theme_field_bg} 85%, white)`);
   root.style.setProperty('--forest-100', `color-mix(in oklab, ${t.theme_field_focus} 12%, ${t.theme_field_bg})`);
   root.style.setProperty('--theme-color', t.theme_sidebar_bg);
+  root.style.setProperty('--accent', `color-mix(in oklab, ${t.theme_indicator} 18%, ${t.theme_field_bg})`);
+  root.style.setProperty('--accent-foreground', t.theme_btn_primary_hover);
 }
 
 export function cssColorToHex(css) {
@@ -189,7 +192,7 @@ export function themeToHexPickers(cfg) {
 export function matchPreset(cfg) {
   const t = themeCfgMerge(cfg);
   for (const [name, preset] of Object.entries(THEME_PRESETS)) {
-    if (name === 'verde') continue;
+    if (name === 'verde' || name === 'centeros') continue;
     if (THEME_KEYS.every((k) => (preset[k] || '').toLowerCase() === (t[k] || '').toLowerCase())) {
       return name;
     }

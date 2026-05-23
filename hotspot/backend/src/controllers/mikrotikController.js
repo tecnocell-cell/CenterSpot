@@ -1,4 +1,6 @@
 const Mikrotik = require("../models/Mikrotik");
+const { audit } = require("../utils/audit");
+const { requireEmpresaId } = require("../utils/tenantAssert");
 
 exports.createMikrotik = async (req, res) => {
   const { nome, ip, usuario, senha, porta, end_hotspot } = req.body;
@@ -6,9 +8,11 @@ exports.createMikrotik = async (req, res) => {
   if (!nome || !ip || !usuario || !senha || !porta) {
     return res.status(400).json({ message: "Campos obrigatórios faltando" });
   }
+  if (requireEmpresaId(req, res) === false) return;
 
   try {
-    await Mikrotik.create({ nome, ip, usuario, senha, porta, end_hotspot, empresa_id: req.empresa_id });
+    const result = await Mikrotik.create({ nome, ip, usuario, senha, porta, end_hotspot, empresa_id: req.empresa_id });
+    await audit.create(req, 'mikrotik', result.insertId, { nome, ip });
     res.status(201).json({ message: "Mikrotik cadastrado com sucesso" });
   } catch (error) {
     console.error("Erro ao cadastrar Mikrotik:", error);

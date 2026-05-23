@@ -834,4 +834,87 @@ Para evoluir com segurança:
 
 ---
 
-*Documento gerado por análise estática do repositório. Nenhum código de negócio foi alterado para produção neste levantamento, exceto assets de marca solicitados pelo usuário.*
+---
+
+## 15. Fase 2 — Hardening, observabilidade e operação
+
+### 15.1 Backup automático
+
+| Item | Caminho / detalhe |
+|------|-------------------|
+| Script backup | `hotspot/backend/scripts/backup.sh` |
+| Script restore | `hotspot/backend/scripts/restore.sh` |
+| Cron exemplo | `hotspot/backend/scripts/cron-centerspot-backup.example` (03:00 diário) |
+| Estrutura | `$PROJECT_ROOT/backups/{mysql,uploads,env}/` + `run-<timestamp>/` |
+| Retenção | 7 dumps diários; cópia semanal aos domingos (4 semanas) |
+| Log | `/var/log/centerspot-backup.log` |
+
+Conteúdo: MySQL (`mysqldump` + gzip), `.env`, `uploads/`, logos (`frontend/*/uploads/logos`), `certificados/`, trechos de config.
+
+### 15.2 Auditoria (`audit_logs`)
+
+| Migration | `016_audit_logs.js` |
+|-----------|---------------------|
+| Helper | `backend/src/utils/audit.js` |
+| Campos | `empresa_id`, `admin_id`, `acao`, `entidade`, `entidade_id`, `payload_json`, `ip`, `created_at` |
+
+Eventos registrados (amostra): login, CRUD admin/empresa/plano, RADIUS, limpeza avançada, pagamento manual, config WhatsApp.
+
+Flag: `AUDIT_ENABLED=0` desliga gravação.
+
+### 15.3 Healthcheck
+
+| Endpoint | `GET /api/system/health` (JWT + `super_admin`) |
+| Frontend | `/super/system` |
+| Verifica | MySQL, PM2, FreeRADIUS, Nginx, Evolution API, WireGuard, disco, memória, uptime |
+
+Estados agregados: `online` | `warning` | `offline`.
+
+### 15.4 Soft delete de admins
+
+| Migration | `017_admins_soft_delete.js` |
+|-----------|----------------------------|
+| Colunas | `admins.deleted_at`, `admins.active` |
+| Login | Bloqueado se `active=0` ou `deleted_at` preenchido |
+| Exclusão API | `DELETE /api/admins/:id` → desativa (não remove linha) |
+| Listagens | Ignoram `deleted_at IS NULL` automaticamente no model |
+
+### 15.5 Rate limit e Helmet
+
+| Pacote | Uso |
+|--------|-----|
+| `helmet` | Headers de segurança (`HELMET_ENABLED=0` desliga) |
+| `express-rate-limit` | Login 5/15min; faixas para auth, pagamentos, webhooks, WhatsApp |
+
+Config central: `backend/src/config/app.js`.
+
+### 15.6 Logs estruturados
+
+`backend/src/utils/logger.js` — formato `timestamp LEVEL [contexto] mensagem`.
+
+### 15.7 WhatsApp status simplificado
+
+| Endpoint novo | `GET /api/whatsapp/status` |
+| Legado (mantido) | `GET /api/whatsapp/instance/status` |
+| Resposta | `conectado`, `desconectado`, `qr_pendente`, `instancia_inexistente` |
+
+Frontend: polling automático em `AdminLayout` e página WhatsApp.
+
+### 15.8 Multi-tenant
+
+Helper `backend/src/utils/tenantAssert.js` — `requireEmpresaId()` em mutações sensíveis (planos, limpeza, admins).
+
+Super admin continua com bypass via ausência de `x-empresa-id` onde aplicável.
+
+### 15.9 PM2 (produção típica)
+
+```bash
+pm2 start server.js --name hotspot-backend --cwd /var/www/hotspot/backend
+pm2 save
+```
+
+Healthcheck lê `pm2 jlist` para processos com nome contendo `hotspot` ou `backend`.
+
+---
+
+*Documento atualizado com Fase 2 (hardening). Ver migrations 016–017 e scripts em `backend/scripts/`.*

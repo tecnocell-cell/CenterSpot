@@ -4,6 +4,8 @@ const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 const { getHealth } = require('../controllers/systemHealthController');
 
-router.get('/health', auth, authorize(['super_admin']), getHealth);
+// GET /api/system/health — super admin (SystemHealth.jsx)
+router.use(auth, authorize('super_admin'));
+router.get('/health', getHealth);
 
 module.exports = router;

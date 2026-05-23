@@ -142,7 +142,8 @@ app.use("/api/empresas", empresaRoutes);  // Auth + authorize interno
 app.use("/api/grupos-permissao", grupoPermissaoRoutes); // Auth + authorize interno
 app.use("/api/system-backup", systemBackupRoutes);
 app.use("/api/system-update", systemUpdateRoutes);
-app.use("/api/system", systemRoutes);
+// GET /api/system/health — diagnóstico super admin (mysql, pm2, freeradius, nginx, evolution, wireguard, disk, memory, uptime)
+app.use('/api/system', systemRoutes);
 if (updatePublishRoutes) app.use("/api/update-publish", updatePublishRoutes);
 if (updateCheckRoutes) app.use("/api/updates", updateCheckRoutes);
 

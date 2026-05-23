@@ -142,8 +142,8 @@ app.use("/api/empresas", empresaRoutes);  // Auth + authorize interno
 app.use("/api/grupos-permissao", grupoPermissaoRoutes); // Auth + authorize interno
 app.use("/api/system-backup", systemBackupRoutes);
 app.use("/api/system-update", systemUpdateRoutes);
-// GET /api/system/health — diagnóstico super admin (mysql, pm2, freeradius, nginx, evolution, wireguard, disk, memory, uptime)
-app.use('/api/system', systemRoutes);
+// GET /api/system/health — diagnóstico super admin (aba Diagnóstico em /super/system)
+app.use("/api/system", systemRoutes);
 if (updatePublishRoutes) app.use("/api/update-publish", updatePublishRoutes);
 if (updateCheckRoutes) app.use("/api/updates", updateCheckRoutes);
 
@@ -497,5 +497,6 @@ app.post('/api/emergency/backup', systemBackupCtrl.criarBackup);
 app.post('/api/emergency/restore/:id', systemBackupCtrl.restaurarBackup);
 
 app.listen(appConfig.server.port, () => {
-  logger.info('server', `API rodando na porta ${appConfig.server.port}`)
-})
+  logger.info('server', `API rodando na porta ${appConfig.server.port}`);
+  logger.info('server', 'Super admin: GET /api/system/health');
+});

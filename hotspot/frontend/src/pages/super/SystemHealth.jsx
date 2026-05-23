@@ -89,7 +89,7 @@ export default function SystemHealth() {
   return (
     <SuperAdminLayout
       title="Diagnóstico do sistema"
-      subtitle="Healthcheck de serviços, recursos e integrações (GET /api/system/health)."
+      subtitle="Healthcheck de serviços, recursos e integrações."
       maxWidth="56rem"
       actions={
         <button

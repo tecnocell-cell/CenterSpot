@@ -28,4 +28,4 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$Root\hotspot
 Write-Host ""
 Write-Host "Painel:  http://localhost:5173"
 Write-Host "API:     http://localhost:3001"
-Write-Host "Login:   admin@empresa.com / admin123"
+Write-Host "Login:   giandersonfjs@gmail.com (senha definida no seed/install)"

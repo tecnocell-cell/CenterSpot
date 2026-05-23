@@ -1,9 +1,20 @@
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/Admin");
 
+const EMPRESA_ROLES = new Set(["owner", "manager", "operator"]);
+
+function mapEmpresaRole(role) {
+  return EMPRESA_ROLES.has(role) ? role : "operator";
+}
+
 const listarAdmins = async (req, res) => {
-  const admins = await Admin.findAll(req.empresa_id);
-  res.json(admins);
+  try {
+    const admins = await Admin.findAll(req.empresa_id);
+    res.json(admins);
+  } catch (err) {
+    console.error("Erro ao listar admins:", err);
+    res.status(500).json({ message: "Erro ao listar administradores" });
+  }
 };
 
 const criarAdmin = async (req, res) => {
@@ -13,17 +24,33 @@ const criarAdmin = async (req, res) => {
     return res.status(400).json({ message: "Email e senha são obrigatórios" });
   }
 
-  // Apenas owner e super_admin podem criar admins
-  const allowedRole = role || 'operator';
-  if (allowedRole === 'super_admin' && req.user.role !== 'super_admin') {
+  if (!req.empresa_id) {
+    return res.status(403).json({ message: "Empresa não identificada" });
+  }
+
+  const globalRole = role || "operator";
+  if (globalRole === "super_admin" && req.user.role !== "super_admin") {
     return res.status(403).json({ message: "Apenas super admin pode criar super admins" });
   }
 
+  const empresaRole = mapEmpresaRole(globalRole);
+
   try {
     const hash = await bcrypt.hash(senha, 10);
-    await Admin.create(email, hash, req.empresa_id, allowedRole, nome || null);
-    res.status(201).json({ message: "Administrador criado com sucesso" });
+    const adminId = await Admin.create(
+      email,
+      hash,
+      req.empresa_id,
+      globalRole,
+      nome || null
+    );
+    await Admin.linkEmpresa(adminId, req.empresa_id, empresaRole);
+
+    res.status(201).json({ message: "Administrador criado com sucesso", id: adminId });
   } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "Email já cadastrado" });
+    }
     console.error("Erro ao criar admin:", err);
     res.status(500).json({ message: "Erro interno ao criar administrador" });
   }
@@ -32,23 +59,91 @@ const criarAdmin = async (req, res) => {
 const atualizarAdmin = async (req, res) => {
   const { id } = req.params;
   const { email, senha, nome } = req.body;
+  const targetId = parseInt(id, 10);
 
   if (!email) return res.status(400).json({ message: "Email é obrigatório" });
 
-  await Admin.update(id, email, nome || null);
+  try {
+    const target = await Admin.findById(targetId);
+    if (!target) {
+      return res.status(404).json({ message: "Administrador não encontrado" });
+    }
 
-  if (senha) {
-    const hash = await bcrypt.hash(senha, 10);
-    await Admin.updatePassword(id, hash);
+    if (req.user.role !== "super_admin") {
+      if (!req.empresa_id) {
+        return res.status(403).json({ message: "Empresa não identificada" });
+      }
+      const noEscopo = await Admin.belongsToEmpresa(targetId, req.empresa_id);
+      if (!noEscopo) {
+        return res.status(403).json({
+          message: "Não é permitido alterar administrador de outra empresa",
+        });
+      }
+    }
+
+    await Admin.update(targetId, email, nome || null);
+
+    if (senha) {
+      const hash = await bcrypt.hash(senha, 10);
+      await Admin.updatePassword(targetId, hash);
+    }
+
+    res.json({ message: "Administrador atualizado com sucesso" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "Email já cadastrado" });
+    }
+    console.error("Erro ao atualizar admin:", err);
+    res.status(500).json({ message: "Erro interno ao atualizar administrador" });
   }
-
-  res.json({ message: "Administrador atualizado com sucesso" });
 };
 
 const deletarAdmin = async (req, res) => {
-  const { id } = req.params;
-  await Admin.remove(id);
-  res.json({ message: "Administrador removido com sucesso" });
+  const targetId = parseInt(req.params.id, 10);
+
+  try {
+    const target = await Admin.findById(targetId);
+    if (!target) {
+      return res.status(404).json({ message: "Administrador não encontrado" });
+    }
+
+    if (targetId === req.user.id) {
+      return res.status(403).json({ message: "Não é permitido excluir a própria conta" });
+    }
+
+    if (Admin.isSeedAdmin(target)) {
+      return res.status(403).json({
+        message: "Não é permitido excluir o administrador principal do sistema",
+      });
+    }
+
+    if (target.role === "super_admin") {
+      const total = await Admin.countSuperAdmins();
+      if (total <= 1) {
+        return res.status(403).json({
+          message: "Não é permitido excluir o último super administrador",
+        });
+      }
+    }
+
+    if (req.user.role !== "super_admin") {
+      if (!req.empresa_id) {
+        return res.status(403).json({ message: "Empresa não identificada" });
+      }
+      const noEscopo = await Admin.belongsToEmpresa(targetId, req.empresa_id);
+      if (!noEscopo) {
+        return res.status(403).json({
+          message: "Não é permitido excluir administrador de outra empresa",
+        });
+      }
+    }
+
+    await Admin.remove(targetId);
+    res.json({ message: "Administrador removido com sucesso" });
+  } catch (err) {
+    console.error("Erro ao deletar admin:", err);
+    res.status(500).json({ message: "Erro interno ao remover administrador" });
+  }
 };
 
 module.exports = {

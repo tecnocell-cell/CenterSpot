@@ -2,11 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import AdminModal from '../AdminModal';
 
+async function parseApiError(res, fallback) {
+  try {
+    const data = await res.json();
+    return data.message || data.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function ConfiguracoesUsuariosPanel() {
   const [usuarios, setUsuarios] = useState([]);
   const [form, setForm] = useState({ email: '', senha: '' });
   const [editando, setEditando] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [erro, setErro] = useState(null);
   const token = localStorage.getItem('admin_token');
 
   const carregarUsuarios = async () => {
@@ -14,8 +24,13 @@ export default function ConfiguracoesUsuariosPanel() {
       const res = await fetch('/api/admins', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        const msg = await parseApiError(res, 'Erro ao carregar administradores');
+        console.error(msg);
+        return;
+      }
       const data = await res.json();
-      setUsuarios(data);
+      setUsuarios(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Erro ao carregar admins:', err);
     }
@@ -27,6 +42,7 @@ export default function ConfiguracoesUsuariosPanel() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErro(null);
     try {
       const url = editando ? `/api/admins/${editando}` : '/api/admins';
       const method = editando ? 'PUT' : 'POST';
@@ -42,39 +58,50 @@ export default function ConfiguracoesUsuariosPanel() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Erro ao salvar usuário');
+      if (!res.ok) {
+        const msg = await parseApiError(res, 'Erro ao salvar usuário');
+        setErro(msg);
+        return;
+      }
 
       setShowModal(false);
       setEditando(null);
       setForm({ email: '', senha: '' });
       carregarUsuarios();
     } catch {
-      alert('Erro ao salvar usuário');
+      setErro('Erro de conexão com o servidor');
     }
   };
 
   const handleEditar = (admin) => {
     setEditando(admin.id);
     setForm({ email: admin.email, senha: '' });
+    setErro(null);
     setShowModal(true);
   };
 
   const handleRemover = async (id) => {
     if (!confirm('Deseja remover este administrador?')) return;
     try {
-      await fetch(`/api/admins/${id}`, {
+      const res = await fetch(`/api/admins/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        const msg = await parseApiError(res, 'Erro ao remover usuário');
+        alert(msg);
+        return;
+      }
       carregarUsuarios();
     } catch {
-      alert('Erro ao remover usuário');
+      alert('Erro de conexão com o servidor');
     }
   };
 
   const openNovo = () => {
     setEditando(null);
     setForm({ email: '', senha: '' });
+    setErro(null);
     setShowModal(true);
   };
 
@@ -145,6 +172,7 @@ export default function ConfiguracoesUsuariosPanel() {
         title={editando ? 'Editar admin' : 'Criar admin'}
       >
         <form onSubmit={handleSubmit}>
+          {erro && <div className="rn-alert rn-alert--danger" style={{ marginBottom: 12 }}>{erro}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="rn-field">
               <label className="rn-label">Email</label>
@@ -170,6 +198,7 @@ export default function ConfiguracoesUsuariosPanel() {
                 className="rn-input"
                 value={form.senha}
                 onChange={(e) => setForm({ ...form, senha: e.target.value })}
+                required={!editando}
               />
             </div>
           </div>

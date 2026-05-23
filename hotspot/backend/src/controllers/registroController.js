@@ -58,6 +58,12 @@ exports.registrarEmpresa = async (req, res) => {
     );
     const adminId = adminResult.insertId;
 
+    await conn.execute(
+      `INSERT INTO admin_empresas (admin_id, empresa_id, role) VALUES (?, ?, 'owner')
+       ON DUPLICATE KEY UPDATE role = VALUES(role)`,
+      [adminId, empresaId]
+    );
+
     await conn.commit();
 
     // Gerar token

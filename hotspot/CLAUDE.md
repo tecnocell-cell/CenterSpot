@@ -1546,7 +1546,7 @@ servidor novo ─ install.sh ─> [SSH detect] -> [deps] -> [estrutura.sql] ->
 | Seed | Tabela | Conteudo |
 |---|---|---|
 | Empresa default | `empresas` | id=1, slug=`default` |
-| Super admin | `admins` | `admin@empresa.com / admin123` (bcrypt) |
+| Super admin | `admins` | `giandersonfjs@gmail.com` (senha no seed/install; bcrypt em `estrutura.sql`) |
 | 5 portais padrao | `portais` | LGPD, Planos, Lead, Lead-Passivo, Login |
 | 2 planos default | `planos` | LGPD (5min), Lead (1min) - mikrotik_id=0 com FK_CHECKS=0 |
 | 4 portal_templates | `portal_templates` | Basico, Planos, Completo, Lead-Passivo |

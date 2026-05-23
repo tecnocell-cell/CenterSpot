@@ -27,7 +27,7 @@ export default function Login() {
         const slug = data.user?.empresa_slug || 'default'
         navigate(`/admin/${slug}`)
       } else {
-        setErro(data.message || 'Erro ao fazer login')
+        setErro(data.error || data.message || 'Erro ao fazer login')
       }
     } catch {
       setErro('Erro de conexão com o servidor')

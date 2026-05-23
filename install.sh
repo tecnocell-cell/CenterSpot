@@ -941,8 +941,8 @@ POSTGRESQL (Evolution):
 
 LOGIN ADMIN:
   URL:   https://${DOMAIN_HOTSPOT}
-  Email: admin@empresa.com
-  Senha: admin123
+  Email: giandersonfjs@gmail.com
+  Senha: @Eaaj1302Enzo#
 
 ============================================================
   MANTENHA ESTE ARQUIVO SEGURO!
@@ -991,7 +991,7 @@ echo "=========================================================="
 echo ""
 echo "  Modo:           ${MODE_LABEL}"
 echo "  Painel:         https://${DOMAIN_HOTSPOT}"
-echo "  Login:          admin@empresa.com / admin123"
+echo "  Login:          giandersonfjs@gmail.com / @Eaaj1302Enzo#"
 echo "  Evolution API:  https://${DOMAIN_EVOLUTION}"
 echo ""
 if [ "$INSTALL_MODE" = "1" ]; then

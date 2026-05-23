@@ -52,7 +52,7 @@ async function migrate() {
     if (!existingEmpresa) {
       await conn.execute(
         `INSERT INTO empresas (nome, slug, email) VALUES (?, ?, ?)`,
-        ['Empresa Padrão', 'default', 'admin@empresa.com']
+        ['Empresa Padrão', 'default', 'giandersonfjs@gmail.com']
       );
     }
     const [[empresa]] = await conn.execute('SELECT id FROM empresas WHERE slug = ?', ['default']);

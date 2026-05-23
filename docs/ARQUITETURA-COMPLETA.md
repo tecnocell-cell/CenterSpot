@@ -652,7 +652,7 @@ Endpoints admin: `POST /api/mikrotiks/:id/enviar-hotspot`, `enviar-login`, `envi
 | **Média** | `super_admin` pode operar em qualquer `empresa_id` — correto por design, mas perigoso se credencial vazar |
 | **Média** | Credenciais MikroTik (`mikrotiks.senha`) armazenadas no MySQL |
 | **Média** | SQL injection: risco baixo se prepared statements consistentes; auditar queries dinâmicas |
-| **Baixa** | Seed admin `admin123` no `estrutura.sql` |
+| **Baixa** | Credencial seed em `estrutura.sql` — trocar após install em produção |
 | **Baixa** | Rotas duplicadas login `/api/admin` e `/api/auth` |
 
 ### 11.3 Isolamento tenant
@@ -818,8 +818,8 @@ Para evoluir com segurança:
 | Campo | Valor |
 |-------|-------|
 | URL painel | `http://localhost:5173` |
-| Email | `admin@empresa.com` |
-| Senha | `admin123` |
+| Email | `giandersonfjs@gmail.com` |
+| Senha | Definida no seed/install (`estrutura.sql` / `user.js`) |
 | Empresa | `default` (id=1) |
 
 ---

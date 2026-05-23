@@ -99,25 +99,41 @@ async function enviarMensagemDireta(telefone, mensagem, empresaId) {
 
 // === Gerenciamento de instancia (multi-tenant) ===
 
-async function getInstanceStatus(req, res) {
-  try {
-    const evo = await getEvolutionConfig(req.empresa_id);
+function offlineStatus(instanceName, reason) {
+  return {
+    exists: false,
+    state: "offline",
+    instance_name: instanceName || null,
+    ...(reason ? { reason } : {}),
+  };
+}
 
+async function getInstanceStatus(req, res) {
+  let evo;
+  try {
+    evo = await getEvolutionConfig(req.empresa_id);
+  } catch (err) {
+    console.warn("getInstanceStatus: config:", err.message);
+    return res.json(offlineStatus(null, "config_error"));
+  }
+
+  try {
     const instResp = await axios.get(
       `${evo.apiUrl}/instance/fetchInstances`,
-      { headers: evoHeaders(evo.apiKey) }
+      { headers: evoHeaders(evo.apiKey), timeout: 8000 }
     );
 
-    const instance = instResp.data.find(i => i.name === evo.instanceName);
+    const list = Array.isArray(instResp.data) ? instResp.data : [];
+    const instance = list.find((i) => i.name === evo.instanceName);
     if (!instance) {
-      return res.json({ exists: false, instance_name: evo.instanceName });
+      return res.json({ exists: false, instance_name: evo.instanceName, state: "not_created" });
     }
 
     let state = instance.connectionStatus || "unknown";
     try {
       const stateResp = await axios.get(
         `${evo.apiUrl}/instance/connectionState/${evo.instanceName}`,
-        { headers: evoHeaders(evo.apiKey) }
+        { headers: evoHeaders(evo.apiKey), timeout: 8000 }
       );
       state = stateResp.data?.instance?.state || state;
     } catch (e) { /* usa status do fetchInstances */ }
@@ -135,8 +151,12 @@ async function getInstanceStatus(req, res) {
       chats_count: instance._count?.Chat || 0,
     });
   } catch (err) {
-    console.error("Erro ao buscar status da instancia:", err?.response?.data || err.message);
-    res.status(500).json({ error: "Erro ao conectar com Evolution API." });
+    const detail = err?.response?.data || err.message;
+    console.warn(
+      "Evolution API indisponível (status tratado como offline):",
+      typeof detail === "object" ? JSON.stringify(detail) : detail
+    );
+    return res.json(offlineStatus(evo.instanceName, "evolution_unreachable"));
   }
 }
 

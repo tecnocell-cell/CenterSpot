@@ -668,11 +668,11 @@ CREATE TABLE `whatsapp_logs` (
 
 -- Empresa padrao
 INSERT INTO `empresas` (`id`, `nome`, `slug`, `email`, `ativo`, `criado_em`, `atualizado_em`) VALUES
-(1, 'Empresa Padrao', 'default', 'admin@empresa.com', 1, NOW(), NOW());
+(1, 'Empresa Padrao', 'default', 'giandersonfjs@gmail.com', 1, NOW(), NOW());
 
--- Super admin (email: admin@empresa.com / senha: admin123)
+-- Super admin (email: giandersonfjs@gmail.com — senha definida no install; hash bcrypt abaixo)
 INSERT INTO `admins` (`id`, `empresa_id`, `email`, `role`, `password`, `created_at`) VALUES
-(1, 1, 'admin@empresa.com', 'super_admin', '$2b$10$SV2foD9AePXojCpHKx.n9eEOtikIydo2Ngg1wXC6vpghAQHxrmTXO', NOW());
+(1, 1, 'giandersonfjs@gmail.com', 'super_admin', '$2b$10$fcTRNDjvS47tKaFHVk1Wc.dAJQIzLSf6/I.XfvwIVuaXMBZnhz.Au', NOW());
 
 -- Vincular admin a empresa
 INSERT INTO `admin_empresas` (`admin_id`, `empresa_id`, `role`, `criado_em`) VALUES
